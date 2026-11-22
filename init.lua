@@ -85,6 +85,29 @@ P.S. You can delete this when you're done too. It's your config now! :)
 --]]
 
 -- ============================================================
+-- Docker Compose filetype detection
+-- ============================================================
+
+vim.filetype.add({
+  filename = {
+    ['compose.yaml'] = 'yaml.docker-compose',
+    ['compose.yml'] = 'yaml.docker-compose',
+    ['docker-compose.yaml'] = 'yaml.docker-compose',
+    ['docker-compose.yml'] = 'yaml.docker-compose',
+  },
+})
+
+-- ============================================================
+-- django template filetype detection
+-- ============================================================
+
+vim.filetype.add({
+  pattern = {
+    ['.*/templates/.*%.html'] = 'htmldjango',
+  },
+})
+
+-- ============================================================
 -- SECTION 1: OPTIONS
 -- Core Neovim settings, leaders, options
 -- ============================================================
@@ -99,7 +122,7 @@ do
   vim.g.maplocalleader = ' '
 
   -- Set to true if you have a Nerd Font installed and selected in the terminal
-  vim.g.have_nerd_font = false
+  vim.g.have_nerd_font = true
 
   -- [[ Setting options ]]
   --  See `:help vim.o`
@@ -122,7 +145,18 @@ do
   --  Schedule the setting after `UiEnter` because it can increase startup-time.
   --  Remove this option if you want your OS clipboard to remain independent.
   --  See `:help 'clipboard'`
-  vim.schedule(function() vim.o.clipboard = 'unnamedplus' end)
+
+  vim.schedule(function()
+    if vim.env.ZELLIJ then
+      -- Keep normal yank/past independent of the system clipboard.
+      vim.opt.clipboard = ''
+    elseif vim.env.WAYLAND_DISPLAY or vim.env.DISPLAY then
+      -- Use the system clipboard in graphical terminals.
+      vim.opt.clipboard = 'unnamedplus'
+    else
+      vim.opt.clipboard = ''
+    end
+  end)
 
   -- Enable break indent
   vim.o.breakindent = true
@@ -250,6 +284,32 @@ do
     desc = 'Highlight when yanking (copying) text',
     group = vim.api.nvim_create_augroup('kickstart-highlight-yank', { clear = true }),
     callback = function() vim.hl.on_yank() end,
+  })
+end
+
+-- ============================================================
+-- Computer identification bar
+-- ============================================================
+
+local hostname = vim.uv.os_gethostname() or 'unknown'
+
+vim.o.winbar =
+  ' ' .. hostname ..
+  ' | %t%=%{strftime("%Y-%m-%d %H:%M")} '
+
+-- Refresh the clock every 30 seconds.
+local clock_timer = vim.uv.new_timer()
+
+if clock_timer then
+  clock_timer:start(30000, 30000, vim.schedule_wrap(function()
+    vim.cmd('redrawstatus')
+  end))
+
+  vim.api.nvim_create_autocmd('VimLeavePre', {
+    callback = function()
+      clock_timer:stop()
+      clock_timer:close()
+    end,
   })
 end
 
@@ -744,6 +804,107 @@ do
     -- But for many setups, the LSP (`rust_analyzer`) will work just fine
     -- rust_analyzer = {},
 
+    --Dockerfile support
+    dockerls = {},
+
+    -- Docker Compose support
+    docker_compose_language_service = {},
+
+    tailwindcss = {
+      settings = {
+        tailwindcss = {
+          includeLanguages = {
+            htmldjango = 'html',
+          },
+        },
+      },
+    },
+
+    -- JavaScript and TypeScript
+    tsc = {},
+
+    -- JSON
+    jsonls = {},
+
+    -- YAML /Docker Compose
+    yamlls = {},
+
+    html = {
+      -- Support ordinary HTML and Django templaes.
+      filetypes = { 'html', 'htmldjango' },
+
+      -- Keep formatting under djLint/Conform.
+      init_options = {
+        provideFormatter = false,
+        embeddedLanguages = {
+          css = true,
+          javascript = true,
+        },
+        configurationSections = {
+          'html',
+          'css',
+          'javascript',
+        },
+
+        -- Additional HTML attributes.
+        dataPaths = {
+          vim.fn.stdpath('config') .. '/htmx.html-data.json',
+        },
+      },
+
+      -- Respond when the HTML server requests the custom-data file.
+      handlers = {
+        ['html/customDataContent'] = function (_, params)
+          local expected = vim.fn.stdpath('config') .. '/htmx.html-data.json'
+
+          -- The server sends a list containing the requested path.
+          local path = type(params) == 'table' and params[1] or nil
+
+          if path ~= expected then
+            return ''
+          end
+
+          local ok, lines = pcall(vim.fn.readfile, path)
+
+          if not ok then
+            return nil
+          end
+
+          return table.concat(lines, '\n')
+        end,
+      },
+    },
+
+    cssls = {},
+
+    pyright = {
+      settings = {
+        python = {
+          analysis = {
+            typeCheckingMode = 'basic',
+            autoImportCompletions = true,
+          },
+        },
+      },
+    },
+
+    ruff = {
+      capabilities = {
+        general = {
+          positionEncodings = { 'utf-16' },
+        },
+      },
+
+      on_attach = function(client)
+        -- Let Pyright provide hover documentation.
+        client.server_capabilities.hoverProvider = false
+
+        -- Let Conform handle formatting.
+        client.server_capabilities.documentFormattingProvider = false
+        client.server_capabilities.documentRangeFormattingProvider = false
+      end,
+    },
+
     stylua = {}, -- Used to format Lua code
 
     -- Special Lua Config, as recommended by neovim help docs
@@ -812,6 +973,42 @@ do
     vim.lsp.config(name, server)
     vim.lsp.enable(name)
   end
+
+  vim.lsp.config('djlint', {
+    cmd = { 'djlint', '--lsp' },
+
+    filetypes = {
+      'htmldjango',
+    },
+
+    root_markers = {
+      'pyproject.toml',
+      'djlint.toml',
+      '.djlint.toml',
+      '.djlintrc',
+      '.git',
+    },
+
+    settings = {
+      djlint = {
+        profile = 'django',
+      },
+    },
+  })
+
+  vim.lsp.enable('djlint')
+
+  vim.lsp.config('djls', {
+    cmd = { 'djls', 'serve' },
+    filetypes = { 'htmldjango' },
+    root_markers = {
+      'manage.py',
+      'pyproject.toml',
+    },
+  })
+
+  vim.lsp.enable('djls')
+
 end
 
 -- ============================================================
@@ -840,6 +1037,7 @@ do
     },
     -- You can also specify external formatters in here.
     formatters_by_ft = {
+      python = { 'ruff_format' },
       -- rust = { 'rustfmt' },
       -- Conform can also run multiple formatters sequentially
       -- python = { "isort", "black" },
@@ -948,7 +1146,7 @@ do
   vim.pack.add { { src = gh 'nvim-treesitter/nvim-treesitter', version = 'main' } }
 
   -- Ensure basic parsers are installed
-  local parsers = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' }
+  local parsers = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc', 'python', 'toml', 'htmldjango', 'javascript', 'typescript', 'tsx', 'json', 'yaml', 'css', }
   require('nvim-treesitter').install(parsers)
 
   ---@param buf integer
@@ -1018,7 +1216,9 @@ do
   -- require 'kickstart.plugins.indent_line'
   -- require 'kickstart.plugins.lint'
   -- require 'kickstart.plugins.autopairs'
-  -- require 'kickstart.plugins.neo-tree'
+  require 'kickstart.plugins.neo-tree'
+  require 'custom.python_debug'
+  require 'custom.zellij_navigation'
 
   -- NOTE: You can add your own plugins, configuration, etc. in `lua/custom/plugins/*.lua`.
   --
@@ -1034,6 +1234,100 @@ do
   -- require 'custom.plugins.ui'
   -- require 'custom.plugins.git'
 end
+
+-- ==================================================
+-- Paste copied Zellij text into Neovom
+-- ==================================================
+
+vim.keymap.set('n', '<leader>zp', function()
+  local path = vim.fn.expand('~/.cache/zellij-clipboard.txt')
+
+  if vim.fn.filereadable(path) ~= 1 then
+    vim.notify('Zellij clipboard is empty or unavailable',
+      vim.log.levels.WARN)
+    return
+  end
+
+  local lines = vim.fn.readfile(path)
+
+  if #lines == 0 then
+    return
+  end
+
+  vim.api.nvim_put(lines, 'l', true, true)
+end, {
+  desc = 'Paste text copied from Zellij',
+})
+
+-- ==================================================
+-- Copy Neovim text to the shared Zellij clipboard
+-- ==================================================
+
+local zellij_copy_command =
+  vim.fn.expand('~/.local/bin/zellij-copy-file')
+
+-- Copy selected lines in Visual mode.
+vim.keymap.set('x', '<leader>zc',
+  ':write !' .. vim.fn.shellescape(zellij_copy_command) .. '<CR>',
+  {
+    desc = 'Copy selected lines to Zellij clipboard',
+  }
+)
+
+-- Copy the current line in Normal mode.
+vim.keymap.set('n', '<leader>zc',
+  ':.write !' .. vim.fn.shellescape(zellij_copy_command) .. '<CR>',
+  {
+    desc = 'Copy current line to Zellij clipboard',
+  }
+)
+
+-- ============================================================
+-- Send shared clipboard contents to another Zellij pane
+-- ============================================================
+
+vim.keymap.set('n', '<leader>zs', function()
+  local path = vim.fn.expand('~/.cache/zellij-clipboard.txt')
+
+  if vim.fn.filereadable(path) ~= 1 then
+    vim.notify('Zellij clipboard file not found',
+      vim.log.levels.WARN)
+    return
+  end
+
+  local pane_id = vim.fn.input('Destination pane ID: ')
+
+  if pane_id == '' then
+    return
+  end
+
+  if not pane_id:match('^terminal_%d+$') then
+    vim.notify('Use a terminal pane ID, such as terminal_3',
+      vim.log.levels.WARN)
+    return
+  end
+
+  local text = table.concat(vim.fn.readfile(path), '\n')
+
+  local result = vim.fn.system({
+    'zellij',
+    'action',
+    'paste',
+    '--pane-id',
+    pane_id,
+    '--',
+    text,
+  })
+
+  if vim.v.shell_error ~= 0 then
+    vim.notify('Zellij paste failed: ' .. result,
+      vim.log.levels.ERROR)
+  else
+    vim.notify('Text sent to ' .. pane_id)
+  end
+end, {
+  desc = 'Send clipboard text to a Zellij pane',
+})
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et

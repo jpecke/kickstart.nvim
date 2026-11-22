@@ -1,0 +1,63 @@
+{
+  "version": 1.1,
+  "globalAttributes": [
+    {
+      "name": "hx-get",
+      "description": "Send an HTTP GET request to the specified URL."
+    },
+    {
+      "name": "hx-post",
+      "description": "Send an HTTP POST request to the specified URL."
+    },
+    {
+      "name": "hx-put",
+      "description": "Send an HTTP PUT request."
+    },
+    {
+      "name": "hx-delete",
+      "description": "Send an HTTP DELETE request."
+    },
+    {
+      "name": "hx-target",
+      "description": "Select the element that receives the response."
+    },
+    {
+      "name": "hx-trigger",
+      "description": "Specify the event that triggers the request."
+    },
+    {
+      "name": "hx-swap",
+      "description": "Specify how response HTML replaces existing content.",
+      "values": [
+        {"name": "innerHTML"},
+        {"name": "outerHTML"},
+        {"name": "beforebegin"},
+        {"name": "afterbegin"},
+        {"name": "beforeend"},
+        {"name": "afterend"},
+        {"name": "delete"},
+        {"name": "none"}
+      ]
+    },
+    {
+      "name": "hx-include",
+      "description": "Include additional elements in the request."
+    },
+    {
+      "name": "hx-vals",
+      "description": "Add values to the request."
+    },
+    {
+      "name": "hx-confirm",
+      "description": "Request confirmation before sending."
+    },
+    {
+      "name": "hx-indicator",
+      "description": "Select an element to display during the request."
+    },
+    {
+      "name": "hx-headers",
+      "description": "Add HTTP headers to the request."
+    }
+  ]
+}

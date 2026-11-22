@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+umask 077
+
+mkdir -p "$HOME/.cache"
+
+tmp=$(mktemp "$HOME/.cache/.zellij-clipboard.XXXXXX")
+trap 'rm -f "$tmp"' EXIT
+
+cat > "$tmp"
+
+mv -f "$tmp" "$HOME/.cache/zellij-clipboard.txt"

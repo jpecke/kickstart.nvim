@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# Shared clipboard file
+CLIPBOARD="$HOME/.cache/zellij-clipboard.txt"
+
+# Zellij 0.46 provides the focused pane ID.
+PANE_ID="${ZELLIJ_ORIGIN_PANE_ID:-}"
+
+# Only paste into terminal panes.
+if [[ ! "$PANE_ID" =~ ^terminal_[0-9]+$ ]]; then
+    exit 0
+fi
+
+# Nothing to paste.
+if [[ ! -s "$CLIPBOARD" ]]; then
+    exit 0
+fi
+
+# Read clipboard contents.
+TEXT=$(cat "$CLIPBOARD")
+
+# Paste into the pane that triggered the shortcut.
+zellij action paste \
+    --pane-id "$PANE_ID" \
+    -- \
+    "$TEXT"

@@ -1,0 +1,130 @@
+NEOVIM + ZELLIJ — QUICK REFERENCE (PRIMARY CONFIG, NOV 2026)
+==========================================================================
+Neovim 0.12.6 / Kickstart vim.pack  |  Zellij 0.46 / Unlock-First
+SPACE = Neovim leader.  Ctrl+g = unlock Zellij. Keys are sequential.
+Use Esc for Neovim Normal mode; Zellij initially stays LOCKED.
+
+NEOVIM: EDIT / SAVE                  NEOVIM: FIND / NAVIGATE
+:w            Save                  Space s f    Find file
+:wq           Save and exit         Space s g    Grep project text
+:q / :q!      Quit / discard        Space /      Search current file
+u / Ctrl+r    Undo / redo           Space Space  Switch open buffers
+v / V         Visual chars/lines    Space s .    Recent files
+yy / dd       Copy/delete line      Space s w    Search word/selection
+p / P         Paste after/before    Space s k    Find keybindings
+ciw           Change inner word     Space s h    Find help
+>> / <<       Indent/outdent        Space s d    Search diagnostics
+.             Repeat change        Space s n    Search Neovim config
+/word         In-file search        \            Open/reveal Neo-tree
+n / N         Next/prev match       :Telescope   Open Telescope picker
+
+NEOVIM: CODE / LSP                    NEOVIM: GIT / GITSIGNS
+grd           Go to definition      ]c / [c     Next/prev change
+grr           Find references       Space h p    Preview hunk
+gri           Implementation        Space h i    Inline preview
+grt           Type definition       Space h s    Stage hunk
+grD           Declaration           Space h r    RESET hunk (CAREFUL)
+grn           Rename symbol         Space h S    Stage buffer
+gra           Code action           Space h R    RESET buffer (CAREFUL)
+gO / gW       Doc/workspace symbols Space h b    Blame line
+K             Hover documentation   Space h d    Diff against index
+Space f       Format via Conform    Space t b    Toggle inline blame
+Space t h     Toggle inlay hints    Space t w    Toggle word diff
+Space q       Diagnostic loclist    Space h q/Q  Changes quickfix
+Space s d     Search diagnostics
+
+NEOVIM: COMPLETION (INSERT)           NEOVIM: SPLITS / WINDOWS
+Ctrl+Space    Open suggestions       :vsplit     Vertical split
+Ctrl+n/p      Next/prev suggestion   :split      Horizontal split
+Ctrl+y        Accept suggestion      Ctrl+h/j/k/l Move window/pane
+Ctrl+e        Hide menu              :close      Close focused window
+Ctrl+k        Signature help         :ls         List buffers
+                                      :terminal   Built-in terminal
+NEOVIM: DEBUGGER                      Esc Esc     Exit terminal-input
+Space d b     Toggle breakpoint      Ctrl+o/i    Jump backward/forward
+Space d c     Continue/start         gg / G      Top/bottom of file
+Space d n     Step over             Ctrl+d/u    Half-page down/up
+Space d i     Step into
+Space d o     Step out
+Space d u     Toggle debug UI
+Space d x     Terminate debug
+
+ZELLIJ: UNLOCK-FIRST (from locked mode)
+Ctrl+g p ...  PANE actions          Ctrl+g t ... TAB actions
+  h/j/k/l     Focus L/D/U/R           n           New tab
+  n           New pane                h / l       Prev / next tab
+  r / d       New pane right/down     1..9        Go to tab #
+  s           New stacked pane        r           Rename tab
+  x           Close pane              x           Close tab
+  f           Fullscreen pane         tab         Last-used tab
+  c           Rename pane
+  w           Floating panes
+  v           PASTE SHARED TEXT INTO FOCUSED PANE (NO ID)
+
+Ctrl+g s ...  SCROLL mode           Ctrl+g o ... SESSION mode
+  e           Open scrollback in       d           Detach session
+              Neovim (keyboard copy) Ctrl+g r ... Resize: h/j/k/l
+  c           Copy last command*     Ctrl+g m ... Move: h/j/k/l
+  j / k       Scroll down / up
+  f           Search scrollback      Alt+h/j/k/l Move focus (terminal
+  Ctrl+b/f    Page up / down                      must support keys)
+  [ / ]       Prev/next prompt*
+*Requires suitable OSC 133 shell integration.
+
+ZELLIJ / NEOVIM SHARED CLIPBOARD  (NO WAYLAND, X11 OR OSC 52)
+Space z c     Neovim Normal: copy CURRENT LINE to shared file
+V ... Space z c   Neovim Visual: copy SELECTED LINES to shared file
+Space z p     Neovim Normal: insert shared file BELOW cursor
+Space z s     Neovim Normal: send shared text to terminal_N (prompt)
+Ctrl+g p v    Zellij: paste shared text into CURRENT FOCUSED pane
+
+COPY TERMINAL OUTPUT (KEYBOARD-ONLY):
+  focus source pane -> Ctrl+g s e -> scrollback opens in Neovim
+  select lines (V, j/k) -> Space z c -> :q! -> switch destination
+  in Neovim: Space z p; in terminal/chat input: Ctrl+g p v
+
+COPY FROM NEOVIM INTO CHAT:
+  Visual select code -> Space z c -> focus chat INPUT -> Ctrl+g p v
+
+DIRECT FILE / PANE HELPERS (SHELL):
+  cat ~/.cache/zellij-clipboard.txt   View shared clipboard file
+  somecommand | ~/.local/bin/zellij-copy-file   Copy command output
+  zellij action list-panes            Identify pane IDs
+  zpaste terminal_3                   Send shared text to pane 3
+  zellij list-sessions                List sessions (outside session)
+  zellij attach --create primary-dev  Attach/create a session
+  Ctrl+g o d                          Detach current Zellij session
+
+FILES / SETTINGS:
+  ~/.config/nvim/init.lua                  Main editor config
+  ~/.config/nvim/lua/custom/python_debug.lua
+  ~/.config/nvim/lua/custom/zellij_navigation.lua
+  ~/.config/nvim/htmx.html-data.json       HTMX completions
+  ~/.config/zellij/config.kdl              Unlock-first bindings
+  ~/.cache/zellij-clipboard.txt            Per-host shared buffer
+  ~/.local/bin/zellij-copy-file            Zellij copy_command
+  ~/.local/bin/zellij-paste-focused         Focused-pane paste script
+  ~/.local/bin/zpaste                       Explicit target pane paste
+
+HEALTH / TROUBLESHOOTING (INSIDE NEOVIM):
+  :messages                      Recent errors
+  :checkhealth                   All checks
+  :checkhealth vim.lsp           Active language servers
+  :Mason                         Tools/packages
+  :ConformInfo                   Formatter info (q to close)
+  :set filetype?                 Filetype; templates -> htmldjango
+  :lua vim.print(vim.lsp.get_clients({bufnr=0}))
+  :lua vim.pack.update(nil, { offline = true })  Inspect plugin state
+  :lua vim.pack.update()         Upgrade plugins intentionally
+
+DO NOT USE older :Lazy or :LspInfo instructions for this config.
+Python+Django+HTMX+Docker editing WORKS on Primary; Django Docker
+DEBUGGING waits for Minddump deployment. Tailwind/DaisyUI CDN class
+completion not validated and not required. djLint may reflow attributes.
+
+CAUTION: Multiline paste into a live shell can execute commands.
+Never treat shared clipboard as secret storage; it persists on disk.
+Pane IDs are session-wide across tabs; Bash auto-names panes terminal_N.
+Nerd Fonts are rendered by the display terminal (Primary kmscon/SSH).
+
+Full explanation: neovim_zellij_complete_guide.md

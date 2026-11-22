@@ -9,6 +9,11 @@ spell/
 # nvim-pack-lock.json in version control - see :help vim.pack-lockfile
 # For the official `nvim-lua/kickstart.nvim` git repository, we leave it ignored to avoid unneeded
 # merge conflicts.
-nvim-pack-lock.json
 
 .DS_Store
+
+# Local configuration backups are not part of the shared installation.
+init.lua.pre-*
+init.lua.backup-*
+*.backup-*
+*.bak.*
